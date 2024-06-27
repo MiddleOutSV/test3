@@ -21,6 +21,12 @@ else:
 
 # 뉴스 가져오기 함수
 
+import streamlit as st
+import yfinance as yf
+import pandas as pd
+import time
+
+# ... (이전 코드 유지)
 
 def get_news(tickers):
     all_news = []
@@ -48,23 +54,32 @@ if news:
     # 뉴스 데이터의 구조 확인
     if news and len(news) > 0:
         st.write("뉴스 데이터 구조:")
-        st.write(news[0].keys())
+        st.write(list(news[0].keys()))
     
     # DataFrame 생성
     news_df = pd.DataFrame(news)
     
-    # 'providerPublishTime' 컬럼이 있는지 확인
-    if 'providerPublishTime' in news_df.columns:
-        news_df['providerPublishTime'] = pd.to_datetime(news_df['providerPublishTime'], unit='s', errors='coerce')
-        news_df = news_df.sort_values('providerPublishTime', ascending=False)
+    # 컬럼 이름 출력
+    st.write("DataFrame 컬럼:")
+    st.write(list(news_df.columns))
+    
+    # 날짜 정보를 위한 컬럼 찾기
+    date_columns = [col for col in news_df.columns if 'time' in col.lower() or 'date' in col.lower()]
+    
+    if date_columns:
+        date_column = date_columns[0]
+        st.write(f"날짜 정보로 사용할 컬럼: {date_column}")
+        news_df[date_column] = pd.to_datetime(news_df[date_column], unit='s', errors='coerce')
+        news_df = news_df.sort_values(date_column, ascending=False)
     else:
-        st.warning("'providerPublishTime' 컬럼이 없습니다. 날짜 정렬을 건너뜁니다.")
+        st.warning("날짜 정보를 포함하는 컬럼을 찾을 수 없습니다. 날짜 정렬을 건너뜁니다.")
     
     # 뉴스 표시
     for i, (_, row) in enumerate(news_df.iterrows()):
-        st.subheader(f"{row['ticker']}: {row['title']}")
+        st.subheader(f"{row['ticker']}: {row.get('title', 'No Title')}")
         st.write(f"출처: {row.get('publisher', 'N/A')}")
-        st.write(f"날짜: {row.get('providerPublishTime', 'N/A')}")
+        if date_columns:
+            st.write(f"날짜: {row.get(date_column, 'N/A')}")
         st.write(f"링크: {row.get('link', 'N/A')}")
         st.write("---")
 
@@ -75,6 +90,8 @@ if news:
                 break
 else:
     st.warning("뉴스를 가져오는 데 실패했습니다. 잠시 후 다시 시도해주세요.")
+
+# ... (이후 코드 유지)
 
 # ... (이후 코드 유지)
 
